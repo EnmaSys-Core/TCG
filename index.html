@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon TCG Paris Guide</title>
+    
+    <!-- Libraries (Order is important: jQuery first) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        .pokeball-bg {
+            background-image: radial-gradient(circle at 50% 50%, white 4%, transparent 4%),
+                linear-gradient(to bottom, #ee1515 0%, #ee1515 48%, #313131 48%, #313131 52%, white 52%, white 100%);
+            background-size: 40px 40px; background-repeat: no-repeat; background-position: center;
+        }
+        .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select {
+            border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.5rem 0.75rem; background-color: white; transition: border-color 0.2s;
+        }
+        .dataTables_wrapper .dataTables_filter input:focus, .dataTables_wrapper .dataTables_length select:focus {
+            outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6;
+        }
+        .nav-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .star { cursor: pointer; color: #d1d5db; font-size: 1.25rem; transition: color 0.1s; }
+        .star.rated, .rating-stars:hover .star { color: #f59e0b; }
+        .star:hover ~ .star { color: #d1d5db; }
+        #main-map { height: 500px; border-radius: 0.5rem; }
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary::after { content: '+'; float: right; font-size: 1.5em; line-height: 1; font-weight: bold; color: #3b82f6; }
+        details[open] > summary::after { content: '−'; }
+        .modal { display: none; }
+        .modal.is-open { display: flex; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 pokeball-bg rounded-full"></div>
+                <h1 class="text-2xl font-bold text-gray-700">Paris TCG Quest</h1>
+            </div>
+            <div id="progress-container" class="text-right">
+                <p class="font-semibold text-sm">My Progress: <span id="progress-text">0/9</span></p>
+                <div class="w-32 bg-gray-200 rounded-full h-2.5 mt-1">
+                    <div id="progress-bar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto flex flex-wrap">
+            <button data-target="home" class="nav-tab nav-active font-semibold py-3 px-5">Home</button>
+            <button data-target="stores" class="nav-tab font-semibold py-3 px-5">Stores</button>
+            <button data-target="routes" class="nav-tab font-semibold py-3 px-5">Routes & Map</button>
+            <button data-target="planner" class="nav-tab font-semibold py-3 px-5">✨ Route Planner</button>
+            <button data-target="events" class="nav-tab font-semibold py-3 px-5">Events</button>
+            <button data-target="toolkit" class="nav-tab font-semibold py-3 px-5">Toolkit</button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-6">
+        
+        <div id="home" class="view-content">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-3xl font-bold mb-4">Welcome, Pokémon Trainer!</h2>
+                <p class="mb-4">This guide is your ultimate companion for a Pokémon TCG adventure in Paris from June 22nd to 25th, 2025. You'll find everything you need to discover the city's best card shops, find hidden gems, and plan your daily quests.</p>
+                <div class="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg text-yellow-800">
+                    <p><span class="font-bold">Important:</span> Store hours are based on the latest available data but can change. Always check a store's Google Maps page or website for the most current hours before visiting!</p>
+                </div>
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="font-bold text-xl mb-2 text-blue-800">Paris TCG Scene Overview</h3>
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="stores" class="view-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-3xl font-bold mb-4">Store Directory</h2>
+                <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-sunday" class="filter-cb form-checkbox rounded text-blue-500"><span>Open Sunday</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-vintage" class="filter-cb form-checkbox rounded text-blue-500"><span>Has Vintage Cards</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-secondhand" class="filter-cb form-checkbox rounded text-blue-500"><span>Has Second-Hand</span></label>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="stores-table" class="display" style="width:100%"></table>
+                </div>
+            </div>
+        </div>
+
+        <div id="routes" class="view-content hidden">
+             <div class="bg-white p-6 rounded-lg shadow">
+                 <h2 class="text-3xl font-bold mb-4">Routes & Interactive Map</h2>
+                 <p class="mb-4">Select a route below to see the suggested itinerary and view the stores on the interactive map. The map shows all stores, with the selected route's stores highlighted in red.</p>
+                 <div id="main-map" class="mb-6"></div>
+                 <div id="routes-container" class="space-y-4"></div>
+             </div>
+        </div>
+
+        <div id="planner" class="view-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-3xl font-bold mb-2">✨ AI Route Planner</h2>
+                <p class="text-gray-600 mb-4">Select the stores you want to visit, add any special requests, and let Gemini create a custom one-day itinerary for you!</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">1. Select Stores</h3>
+                        <div id="planner-store-selection" class="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-md"></div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">2. Add Special Requests</h3>
+                        <textarea id="planner-requests" class="w-full border-gray-300 rounded-md shadow-sm p-2" rows="4" placeholder="e.g., Start after 1 PM, include a 30-minute break for coffee, I want to end near the Eiffel Tower..."></textarea>
+                    </div>
+                </div>
+
+                <div class="text-center mt-6">
+                    <button id="generate-route-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Generate Custom Route</button>
+                </div>
+
+                <div id="planner-result-container" class="mt-6 hidden">
+                    <h3 class="font-semibold text-xl mb-2">Your Custom Itinerary</h3>
+                    <div id="planner-result" class="bg-gray-50 border p-4 rounded-md whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="events" class="view-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-3xl font-bold mb-4">Community Events</h2>
+                <div class="p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+                    <h3 class="font-bold text-lg text-yellow-800">Event Status for June 22-25, 2025</h3>
+                    <p class="mt-2">There are no major confirmed Pokémon TCG tournaments or official events for these specific dates as of our last check. However, local stores often host weekly leagues or casual play days.</p>
+                    <p class="mt-2 font-semibold">It is highly recommended to check the stores' official websites or social media closer to your travel date for the most up-to-date schedules.</p>
+                    <div id="event-links" class="mt-4 space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="toolkit" class="view-content hidden">
+             <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-3xl font-bold mb-2">Trainer's Toolkit</h2>
+                <p class="text-gray-600 mb-6">Everything you need for a successful expedition. From navigating the metro to key French phrases, these tools will help you navigate the Parisian TCG scene like a pro.</p>
+                <div class="space-y-4">
+                    <details class="bg-gray-50 p-4 rounded-lg border">
+                        <summary class="font-semibold text-lg">Essential French for the Card Hunter</summary>
+                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong>Vintage cards:</strong> <em>Avez-vous des cartes Pokémon anciennes / vintage ?</em> (Do you have old/vintage Pokémon cards?)</li>
+                            <li><strong>Single cards:</strong> <em>Vendez-vous des cartes à l'unité ?</em> (Do you sell single cards?)</li>
+                            <li><strong>Language:</strong> <em>En anglais / en japonais ?</em> (In English / in Japanese?)</li>
+                            <li><strong>Card buyback:</strong> <em>Est-ce que vous rachetez des cartes ?</em> (Do you buy cards?)</li>
+                            <li><strong>Specific search:</strong> <em>Je cherche cette carte spécifique.</em> (I am looking for this specific card.)</li>
+                        </ul>
+                    </details>
+                    <details class="bg-gray-50 p-4 rounded-lg border">
+                        <summary class="font-semibold text-lg">Navigation: Métro and RER</summary>
+                        <p class="mt-4 text-gray-700">The Paris public transport system (RATP) is the most efficient way to get around. The <strong>Métro</strong> serves the city center, while the <strong>RER</strong> connects to the suburbs. For a short trip, buying single tickets or a pack of 10 ('carnet') is often the most cost-effective. Apps like Google Maps or Citymapper provide excellent real-time directions.</p>
+                    </details>
+                    <details class="bg-gray-50 p-4 rounded-lg border">
+                        <summary class="font-semibold text-lg">Payments, VAT, and Customs</summary>
+                        <p class="mt-4 text-gray-700">International credit cards (Visa, Mastercard) are widely accepted. Have some Euros in cash for small purchases. As a non-EU resident, for purchases over €100.01 in a single store on the same day, you can ask for a <strong>VAT refund form ('détaxe')</strong> to get a tax refund at the airport. Keep your receipts for U.S. customs on your return.</p>
+                    </details>
+                     <details class="bg-gray-50 p-4 rounded-lg border">
+                        <summary class="font-semibold text-lg">Collector's Etiquette</summary>
+                        <p class="mt-4 text-gray-700">When handling valuable or vintage cards from a store's binder or display case, always ask for permission from the staff first. Handle cards gently by the edges and avoid touching the surface. This shows respect for the items and the store owner.</p>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="vibe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="p-6 md:p-8">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 id="vibe-modal-title" class="text-2xl font-bold text-gray-900"></h3>
+                    <button id="close-vibe-modal-btn" class="text-gray-400 hover:text-gray-800 transition-colors duration-200 text-3xl font-light">&times;</button>
+                </div>
+                <div id="vibe-modal-content" class="text-gray-700"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // This script will execute only after the entire HTML document is loaded and ready.
+    $(document).ready(function() {
+
+        const appData = {
+            "stores": [
+                { "id": "S01", "name": "Curious Pop", "address": "57 rue du Temple, 75004 Paris", "arrondissement": "4th", "coordinates": {"lat": 48.8606, "long": 2.3545}, "inventory_size": "Large", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.5/5", "website": "https://curiouspop.com/", "social_media": {"instagram": "https://www.instagram.com/curiouspop/", "facebook": "https://www.facebook.com/curiouspop"}},
+                { "id": "S02", "name": "Fuji Store", "address": "6 rue Rampon, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8665, "long": 2.3683}, "inventory_size": "Large", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.8/5", "website": "https://fuji-store.fr/", "social_media": {"instagram": "https://www.instagram.com/fujistore/"}},
+                { "id": "S03", "name": "Parkage GSH", "address": "25 rue Geoffroy-Saint-Hilaire, 75005 Paris", "arrondissement": "5th", "coordinates": {"lat": 48.8436, "long": 2.3553}, "inventory_size": "Large", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.6/5", "website": "https://www.parkage.com/", "social_media": {"instagram": "https://www.instagram.com/parkage_france/"}},
+                { "id": "S04", "name": "UltraJeux Bastille", "address": "13 Rue Amelot, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8558, "long": 2.3684}, "inventory_size": "Medium", "vintage_cards": "Unknown", "second_hand_cards": "Unknown", "open_sunday": true, "rating": "4.4/5", "website": "https://www.ultrajeux.com/", "social_media": {"instagram": "https://www.instagram.com/ultrajeux/"}},
+                { "id": "S05", "name": "Le Repaire du Dragon", "address": "28 rue des Fossés Saint-Bernard, 75005 Paris", "arrondissement": "5th", "coordinates": {"lat": 48.8475, "long": 2.3533}, "inventory_size": "Medium", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.7/5", "website": "https://www.lerepairedudragon.fr/", "social_media": {"facebook": "https://www.facebook.com/lerepairedudragon"}},
+                { "id": "S06", "name": "Le Coin des Barons", "address": "66 Rue de la Verrerie, 75004 Paris", "arrondissement": "4th", "coordinates": {"lat": 48.8582, "long": 2.3524}, "inventory_size": "Small", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.3/5", "website": "https://www.sortiraparis.com/shopping-and-fashion/shopping/articles/173981-le-coin-des-barons-the-boutique-for-tcg-and-board-game-enthusiasts-in-paris", "social_media": {"instagram": "https://www.instagram.com/lecoindesbarons/"}},
+                { "id": "S07", "name": "Parkage EDB", "address": "48 rue de l'École de Droit, 75006 Paris", "arrondissement": "6th", "coordinates": {"lat": 48.8517, "long": 2.3414}, "inventory_size": "Medium", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.5/5", "website": "https://www.parkage.com/", "social_media": {"instagram": "https://www.instagram.com/parkage_france/"}},
+                { "id": "S08", "name": "UltraJeux Oberkampf", "address": "103 rue de la Folie Méricourt, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8672, "long": 2.3725}, "inventory_size": "Medium", "vintage_cards": "Unknown", "second_hand_cards": "Unknown", "open_sunday": false, "rating": "4.6/5", "website": "https://www.ultrajeux.com/", "social_media": {"instagram": "https://www.instagram.com/ultrajeux/"}},
+                { "id": "S09", "name": "Magic Bazar", "address": "13 rue de la Glacière, 75013 Paris", "arrondissement": "13th", "coordinates": {"lat": 48.8340, "long": 2.3480}, "inventory_size": "Large", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.7/5", "website": "https://www.magicbazar.fr/", "social_media": {}}
+            ],
+            "routes": [
+                { "name": "Route 1: The Sunday Collector's Run", "estimated_time": "4-5 hours", "stores": ["S02", "S04", "S06", "S01"], "sightseeing": ["Place de la Bastille", "Le Marais District", "Centre Pompidou"] },
+                { "name": "Route 2: The Latin Quarter Deep Dive", "estimated_time": "3-4 hours", "stores": ["S05", "S03", "S07"], "sightseeing": ["Jardin des Plantes", "Sorbonne University", "Luxembourg Gardens"] },
+                { "name": "Route 3: The 11th Arrondissement Sweep", "estimated_time": "2-3 hours", "stores": ["S02", "S08", "S04"], "sightseeing": ["Place de la République", "Canal Saint-Martin"] }
+            ]
+        };
+
+        let visitedStores = JSON.parse(localStorage.getItem('visitedStores')) || [];
+        let storeRatings = JSON.parse(localStorage.getItem('storeRatings')) || {};
+        let map, storeMarkers = {}, routeLayerGroup = L.layerGroup();
+        
+        function updateProgress() {
+            const progress = (visitedStores.length / appData.stores.length) * 100;
+            $('#progress-bar').css('width', `${progress}%`);
+            $('#progress-text').text(`${visitedStores.length}/${appData.stores.length}`);
+        }
+
+        function toggleVisited(storeId) {
+            const index = visitedStores.indexOf(storeId);
+            if (index > -1) visitedStores.splice(index, 1);
+            else visitedStores.push(storeId);
+            localStorage.setItem('visitedStores', JSON.stringify(visitedStores));
+            updateProgress();
+            $('#stores-table').DataTable().rows().invalidate('data').draw(false);
+        }
+
+        function saveRating(storeId, rating) {
+            storeRatings[storeId] = rating;
+            localStorage.setItem('storeRatings', JSON.stringify(storeRatings));
+            $('#stores-table').DataTable().rows().invalidate('data').draw(false);
+        }
+        
+        $('.nav-tab').on('click', function() {
+            const target = $(this).data('target');
+            $('.view-content').addClass('hidden');
+            $('#' + target).removeClass('hidden');
+            $('.nav-tab').removeClass('nav-active');
+            $(this).addClass('nav-active');
+            if (target === 'routes' && map) setTimeout(() => map.invalidateSize(), 10);
+        });
+
+        function initStoresTable() {
+            const table = $('#stores-table').DataTable({
+                data: appData.stores,
+                responsive: true,
+                columns: [
+                    { title: "✓", data: "id", orderable: false, render: data => `<input type="checkbox" class="visit-cb form-checkbox rounded text-blue-500" data-id="${data}" ${visitedStores.includes(data) ? 'checked' : ''}>` },
+                    { title: "Store", data: "name", render: (data, type, row) => `<a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-semibold">${data}</a>` },
+                    { title: "Inventory", data: "inventory_size" },
+                    { title: "Vintage", data: "vintage_cards" },
+                    { title: "Rating", data: "rating" },
+                    { title: "My Rating", data: "id", orderable: false, render: data => {
+                        let stars = '';
+                        const currentRating = storeRatings[data] || 0;
+                        for (let i = 1; i <= 5; i++) stars += `<span class="star ${i <= currentRating ? 'rated' : ''}" data-id="${data}" data-value="${i}">&#9733;</span>`;
+                        return `<div class="rating-stars">${stars}</div>`;
+                    }},
+                    { title: "Actions", data: "id", orderable: false, render: data => `<button class="get-vibe-btn bg-purple-500 text-white px-2 py-1 text-xs rounded hover:bg-purple-600" data-id="${data}">✨ Get Vibe</button>` }
+                ]
+            });
+
+            $('#stores-table tbody').on('change', '.visit-cb', function() { toggleVisited($(this).data('id')); });
+            $('#stores-table tbody').on('click', '.star', function(e) { e.stopPropagation(); saveRating($(this).data('id'), $(this).data('value')); });
+            $('#stores-table tbody').on('click', '.get-vibe-btn', function(e) { e.stopPropagation(); getStoreVibe($(this).data('id')); });
+            
+            $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
+                const store = appData.stores[dataIndex];
+                if ($('#filter-sunday').is(':checked') && !store.open_sunday) return false;
+                if ($('#filter-vintage').is(':checked') && !['Yes', 'Likely'].includes(store.vintage_cards)) return false;
+                if ($('#filter-secondhand').is(':checked') && !['Yes', 'Likely'].includes(store.second_hand_cards)) return false;
+                return true;
+            });
+
+            $('.filter-cb').on('change', () => table.draw());
+        }
+
+        function initMap() {
+            map = L.map('main-map').setView([48.8566, 2.3522], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+            const defaultIcon = L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+            const highlightedIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+            appData.stores.forEach(store => {
+                const marker = L.marker([store.coordinates.lat, store.coordinates.long], { icon: defaultIcon }).addTo(map);
+                let social = store.social_media.instagram ? `<a href="${store.social_media.instagram}" target="_blank" class="text-blue-500">Instagram</a>` : '';
+                if(store.social_media.facebook) social += (social ? ' | ' : '') + `<a href="${store.social_media.facebook}" target="_blank" class="text-blue-500">Facebook</a>`;
+                marker.bindPopup(`<b>${store.name}</b><br>${store.address}<br><a href="${store.website}" target="_blank" class="text-blue-500">Website</a> | <a href="https://maps.google.com/?q=${store.coordinates.lat},${store.coordinates.long}" target="_blank" class="text-blue-500">Directions</a><br>${social || ''}`);
+                storeMarkers[store.id] = { marker, defaultIcon, highlightedIcon };
+            });
+            routeLayerGroup.addTo(map);
+        }
+        
+        function displayRouteOnMap(routeId) {
+            routeLayerGroup.clearLayers();
+            Object.values(storeMarkers).forEach(m => m.marker.setIcon(m.defaultIcon));
+            const route = appData.routes[routeId];
+            if (!route) return;
+            const latLngs = route.stores.map(id => {
+                const storeMarkerInfo = storeMarkers[id];
+                if (storeMarkerInfo) storeMarkerInfo.marker.setIcon(storeMarkerInfo.highlightedIcon);
+                return storeMarkerInfo.marker.getLatLng();
+            });
+            if(latLngs.length > 0) {
+                 const polyline = L.polyline(latLngs, {color: '#ef4444', weight: 5}).addTo(routeLayerGroup);
+                 map.fitBounds(polyline.getBounds().pad(0.2));
+            }
+        }
+        
+        function renderRoutes() {
+            const container = $('#routes-container');
+            container.html('');
+            appData.routes.forEach((route, index) => {
+                const storeList = route.stores.map(id => `<li><span class="font-bold">${appData.stores.find(s=>s.id===id).name}</span></li>`).join('');
+                const sightsList = route.sightseeing.map(s => `<li>${s}</li>`).join('');
+                const routeHtml = `
+                    <div class="border rounded-lg p-4">
+                        <details>
+                            <summary class="font-bold text-xl">${route.name} <span class="text-sm font-normal text-gray-500">(${route.estimated_time})</span></summary>
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><h4 class="font-semibold mb-2">Store Visits:</h4><ul class="list-disc list-inside space-y-1">${storeList}</ul></div>
+                                <div><h4 class="font-semibold mb-2">Nearby Sights:</h4><ul class="list-disc list-inside space-y-1">${sightsList}</ul></div>
+                            </div>
+                            <button class="show-route-btn mt-4 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm" data-route-id="${index}">Show on Map</button>
+                        </details>
+                    </div>`;
+                container.append(routeHtml);
+            });
+            $('.show-route-btn').on('click', function() { displayRouteOnMap($(this).data('route-id')); });
+        }
+        
+        function renderChart() {
+            const ctx = $('#distribution-chart')[0].getContext('2d');
+            const counts = appData.stores.reduce((acc, s) => { acc[s.arrondissement] = (acc[s.arrondissement] || 0) + 1; return acc; }, {});
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels: Object.keys(counts), datasets: [{ label: '# of Stores', data: Object.values(counts), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] },
+                options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        
+        function renderEventLinks() {
+            const container = $('#event-links');
+            container.html('');
+            ["Parkage GSH", "UltraJeux Bastille", "Fuji Store"].forEach(name => {
+                const store = appData.stores.find(s => s.name === name);
+                if (store) container.append(`<div><a href="${store.website}" target="_blank" class="text-blue-600 hover:underline">Check ${store.name} for events</a></div>`);
+            });
+        }
+
+        function renderPlannerStoreSelection() {
+            const container = $('#planner-store-selection');
+            container.html('');
+            appData.stores.forEach(store => {
+                container.append(`<label class="flex items-center space-x-2"><input type="checkbox" class="planner-store-cb form-checkbox rounded text-blue-500" value="${store.id}"><span>${store.name}</span></label>`);
+            });
+        }
+        
+        async function callGemini(prompt) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                }
+                return "Sorry, I couldn't generate a response. The model's response was empty.";
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                return `Sorry, there was an error contacting the AI. Please check your internet connection and the console for details.`;
+            }
+        }
+
+        async function generateCustomRoute() {
+            const selectedStoreIds = Array.from($('.planner-store-cb:checked')).map(cb => cb.value);
+            if (selectedStoreIds.length === 0) { alert("Please select at least one store."); return; }
+            const selectedStores = appData.stores.filter(s => selectedStoreIds.includes(s.id));
+            const requests = $('#planner-requests').val();
+            const resultDiv = $('#planner-result');
+            $('#planner-result-container').show();
+            resultDiv.html('<div class="flex justify-center items-center"><div class="loader"></div><p class="ml-4">Generating your custom route...</p></div>');
+            const storeDetails = selectedStores.map(s => `${s.name} at ${s.address} (Arrondissement: ${s.arrondissement})`).join('; ');
+            const prompt = `Act as a helpful Paris tour guide for a Pokémon TCG fan. Create a logical and time-efficient one-day itinerary to visit the following stores: ${storeDetails}. The user has these requests: "${requests || 'None'}". Structure the output with a title, suggested times, and travel methods (walking or Métro line). Be realistic about travel.`;
+            const itinerary = await callGemini(prompt);
+            resultDiv.text(itinerary);
+        }
+
+        async function getStoreVibe(storeId) {
+            const store = appData.stores.find(s => s.id === storeId);
+            if (!store) return;
+            const modal = $('#vibe-modal');
+            $('#vibe-modal-title').text(`✨ Vibe Check: ${store.name}`);
+            $('#vibe-modal-content').html('<div class="flex justify-center items-center"><div class="loader"></div><p class="ml-4">Analyzing store vibes...</p></div>');
+            modal.addClass('is-open');
+            const prompt = `As a Pokémon TCG enthusiast, describe the likely "vibe" and experience at a Paris store with these traits: Name: ${store.name}; Inventory Size: ${store.inventory_size}; Sells Vintage Cards: ${store.vintage_cards}; Rating: ${store.rating}. Write a short, evocative paragraph.`;
+            const vibe = await callGemini(prompt);
+            $('#vibe-modal-content').text(vibe);
+        }
+        
+        // Setup Event Handlers
+        $('#generate-route-btn').on('click', generateCustomRoute);
+        $('#close-vibe-modal-btn').on('click', () => $('#vibe-modal').removeClass('is-open'));
+        $('#vibe-modal').on('click', function(e) { if (e.target === this) $(this).removeClass('is-open'); });
+        
+        // Initial Page Renders
+        initStoresTable();
+        initMap();
+        renderRoutes();
+        renderChart();
+        renderEventLinks();
+        renderPlannerStoreSelection();
+        updateProgress();
+    });
+    </script>
+</body>
+</html>
