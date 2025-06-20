@@ -544,10 +544,11 @@
 
               }
             },
+            <!--- CHICKEN INDICATOR 
             {
               data: 'name',
               render: function(data, type, row) {
-                return `<a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-bold">${data}</a>`;
+              return `<td class="sticky-col"><a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-bold">${data}</a></td>`;
               }
             },
             { data: 'address' },
