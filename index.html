@@ -186,8 +186,8 @@
       <table id="store-table" class="display w-full">
         <thead class="table-header">
           <tr>
-            <th>Caught!</th>
-            <th>Store Name</th>
+            <th class="sticky-col">Caught!</th>
+            <th class="sticky-col">Store Name</th>
             <th>Address</th>
             <th>Inventory Size</th>
             <th>Vintage Cards</th>
@@ -198,7 +198,9 @@
             <th>Your Rating</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+                                      <!-- rows dynamically injected via JavaScript -->
+        </tbody>
       </table>
       <!-- Map -->
       <div class="mt-6">
@@ -538,7 +540,8 @@
             {
               data: null,
               render: function(data, type, row) {
-                return `<input type="checkbox" class="visited-checkbox" data-store="${row.name}" ${visitedStores[row.name] ? 'checked' : ''}>`;
+  return `<td class="sticky-col"><input type="checkbox" class="visited-checkbox" data-store="${row.name}" ${visitedStores[row.name] ? 'checked' : ''}></td>`;
+
               }
             },
             {
