@@ -540,15 +540,14 @@
             {
               data: null,
               render: function(data, type, row) {
-  return `<td class="sticky-col"><input type="checkbox" class="visited-checkbox" data-store="${row.name}" ${visitedStores[row.name] ? 'checked' : ''}></td>`;
+                return `<input type="checkbox" class="visited-checkbox" data-store="${row.name}" ${visitedStores[row.name] ? 'checked' : ''}>`;
 
               }
             },
-            <!--- CHICKEN INDICATOR 
             {
               data: 'name',
               render: function(data, type, row) {
-              return `<td class="sticky-col"><a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-bold">${data}</a></td>`;
+                return `<a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-bold">${data}</a>`;
               }
             },
             { data: 'address' },
