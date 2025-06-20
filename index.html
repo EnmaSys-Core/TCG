@@ -1,428 +1,731 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon TCG Paris Guide</title>
-    
-    <!-- Libraries (Order is important: jQuery first) -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <script type="text/javascript" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-    <!-- Custom Styles -->
-    <style>
-        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        .pokeball-bg {
-            background-image: radial-gradient(circle at 50% 50%, white 4%, transparent 4%),
-                linear-gradient(to bottom, #ee1515 0%, #ee1515 48%, #313131 48%, #313131 52%, white 52%, white 100%);
-            background-size: 40px 40px; background-repeat: no-repeat; background-position: center;
-        }
-        .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select {
-            border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.5rem 0.75rem; background-color: white; transition: border-color 0.2s;
-        }
-        .dataTables_wrapper .dataTables_filter input:focus, .dataTables_wrapper .dataTables_length select:focus {
-            outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6;
-        }
-        .nav-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; }
-        .star { cursor: pointer; color: #d1d5db; font-size: 1.25rem; transition: color 0.1s; }
-        .star.rated, .rating-stars:hover .star { color: #f59e0b; }
-        .star:hover ~ .star { color: #d1d5db; }
-        #main-map { height: 500px; border-radius: 0.5rem; }
-        details > summary { list-style: none; cursor: pointer; }
-        details > summary::-webkit-details-marker { display: none; }
-        details > summary::after { content: '+'; float: right; font-size: 1.5em; line-height: 1; font-weight: bold; color: #3b82f6; }
-        details[open] > summary::after { content: '−'; }
-        .modal { display: none; }
-        .modal.is-open { display: flex; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon TCG Paris Adventure (June 22–25, 2025)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet.js CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- DataTables.js CDN -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #ffcb05, #3b4cca);
+      color: #2b2b2b;
+    }
+    .poke-card {
+      background: white;
+      border: 4px solid #e3350d;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .poke-card::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, #fff 20%, transparent 20%), radial-gradient(circle, #000 10%, transparent 10%);
+      background-size: 20px 20px;
+      opacity: 0.1;
+    }
+    .map-container {
+      height: 300px;
+      border-radius: 10px;
+      border: 2px solid #3b4cca;
+    }
+    .star-rating {
+      cursor: pointer;
+      color: #ffd700;
+      font-size: 1.2rem;
+    }
+    .visited-checkbox {
+      accent-color: #e3350d;
+    }
+    .progress-bar {
+      background: #e0e0e0;
+      height: 25px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #3b4cca;
+    }
+    .progress-fill {
+      background: #4caf50;
+      height: 100%;
+      transition: width 0.5s ease-in-out;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      background: #ffcb05;
+      border: 2px solid #e3350d;
+      border-radius: 20px;
+      margin: 5px;
+      font-weight: bold;
+    }
+    .nav-link {
+      transition: transform 0.2s;
+    }
+    .nav-link:hover {
+      transform: scale(1.1);
+    }
+    .table-header {
+      background: #3b4cca;
+      color: white;
+    }
+    #store-table th, #store-table td {
+      border: 1px solid #e3350d;
+      padding: 10px;
+    }
+    .accordion-header {
+      cursor: pointer;
+      background: #3b4cca;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+    }
+    .accordion-content {
+      display: none;
+      padding: 10px;
+    }
+    .accordion-content.active {
+      display: block;
+    }
+  </style>
 </head>
-<body class="antialiased text-gray-800">
-
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 pokeball-bg rounded-full"></div>
-                <h1 class="text-2xl font-bold text-gray-700">Paris TCG Quest</h1>
-            </div>
-            <div id="progress-container" class="text-right">
-                <p class="font-semibold text-sm">My Progress: <span id="progress-text">0/9</span></p>
-                <div class="w-32 bg-gray-200 rounded-full h-2.5 mt-1">
-                    <div id="progress-bar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
+<body class="min-h-screen">
+  <div class="container mx-auto p-6">
+    <!-- Header -->
+    <header class="text-center mb-8 poke-card">
+      <h1 class="text-5xl font-bold text-blue-800 flex items-center justify-center">
+        <span class="mr-2">⚡</span> Pokémon TCG Paris Adventure <span class="ml-2">⚡</span>
+      </h1>
+      <p class="text-xl text-gray-700 mt-2">Catch 'em all in Paris, June 22–25, 2025!</p>
+      <div class="progress-bar mt-4">
+        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p id="progress-text" class="mt-2 text-lg font-semibold">Adventure Progress: 0/9 Stores Visited</p>
+      <div id="badge-container" class="mt-4"></div>
     </header>
 
-    <nav class="bg-white shadow-sm">
-        <div class="container mx-auto flex flex-wrap">
-            <button data-target="home" class="nav-tab nav-active font-semibold py-3 px-5">Home</button>
-            <button data-target="stores" class="nav-tab font-semibold py-3 px-5">Stores</button>
-            <button data-target="routes" class="nav-tab font-semibold py-3 px-5">Routes & Map</button>
-            <button data-target="planner" class="nav-tab font-semibold py-3 px-5">✨ Route Planner</button>
-            <button data-target="events" class="nav-tab font-semibold py-3 px-5">Events</button>
-            <button data-target="toolkit" class="nav-tab font-semibold py-3 px-5">Toolkit</button>
-        </div>
+    <!-- Navigation -->
+    <nav class="bg-blue-800 text-white rounded-lg p-4 mb-8 flex flex-wrap justify-center gap-6">
+      <a href="#home" class="nav-link text-lg font-semibold hover:text-yellow-300">Home</a>
+      <a href="#stores" class="nav-link text-lg font-semibold hover:text-yellow-300">Stores</a>
+      <a href="#routes" class="nav-link text-lg font-semibold hover:text-yellow-300">Routes</a>
+      <a href="#events" class="nav-link text-lg font-semibold hover:text-yellow-300">Events</a>
+      <a href="#toolkit" class="nav-link text-lg font-semibold hover:text-yellow-300">Toolkit</a>
     </nav>
 
-    <main class="container mx-auto p-4 md:p-6">
-        
-        <div id="home" class="view-content">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-3xl font-bold mb-4">Welcome, Pokémon Trainer!</h2>
-                <p class="mb-4">This guide is your ultimate companion for a Pokémon TCG adventure in Paris from June 22nd to 25th, 2025. You'll find everything you need to discover the city's best card shops, find hidden gems, and plan your daily quests.</p>
-                <div class="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg text-yellow-800">
-                    <p><span class="font-bold">Important:</span> Store hours are based on the latest available data but can change. Always check a store's Google Maps page or website for the most current hours before visiting!</p>
-                </div>
-                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 class="font-bold text-xl mb-2 text-blue-800">Paris TCG Scene Overview</h3>
-                    <canvas id="distribution-chart"></canvas>
-                </div>
-            </div>
+    <!-- Home Section -->
+    <section id="home" class="poke-card">
+      <h2 class="text-3xl font-bold text-red-600 mb-4">Welcome, Trainer!</h2>
+      <p class="text-lg mb-4">Embark on a Pokémon TCG quest in Paris! Explore top stores for rare cards, use filters to find hidden gems, follow epic routes with sightseeing, and earn badges by visiting stores. Click store names or social media icons to check their sites!</p>
+      <p class="text-sm italic text-gray-600">Pro Tip: Check off stores and rate your finds to unlock badges! Use the Toolkit for navigation and French phrases.</p>
+      <p class="text-sm text-gray-600 mt-2"><b>Note:</b> Store hours and events are current as of June 20, 2025. Check websites or social media in May/June 2025 for updates.</p>
+    </section>
+
+    <!-- Stores Section -->
+    <section id="stores" class="poke-card">
+      <h2 class="text-3xl font-bold text-blue-800 mb-6">Pokémon TCG Stores</h2>
+      <!-- Filters -->
+      <div class="mb-6 flex flex-wrap gap-4">
+        <div>
+          <label class="mr-2 font-semibold">Filter by Day:</label>
+          <select id="day-filter" class="border border-blue-800 rounded p-2 bg-yellow-100">
+            <option value="">All Days</option>
+            <option value="Sun">Sunday, June 22</option>
+            <option value="Mon">Monday, June 23</option>
+            <option value="Tue">Tuesday, June 24</option>
+            <option value="Wed">Wednesday, June 25</option>
+          </select>
         </div>
-
-        <div id="stores" class="view-content hidden">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-3xl font-bold mb-4">Store Directory</h2>
-                <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-sunday" class="filter-cb form-checkbox rounded text-blue-500"><span>Open Sunday</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-vintage" class="filter-cb form-checkbox rounded text-blue-500"><span>Has Vintage Cards</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="filter-secondhand" class="filter-cb form-checkbox rounded text-blue-500"><span>Has Second-Hand</span></label>
-                </div>
-                <div class="overflow-x-auto">
-                    <table id="stores-table" class="display" style="width:100%"></table>
-                </div>
-            </div>
+        <div>
+          <label class="mr-2 font-semibold">Vintage Cards:</label>
+          <select id="vintage-filter" class="border border-blue-800 rounded p-2 bg-yellow-100">
+            <option value="">All</option>
+            <option value="Yes">Yes</option>
+            <option value="Likely">Likely</option>
+          </select>
         </div>
-
-        <div id="routes" class="view-content hidden">
-             <div class="bg-white p-6 rounded-lg shadow">
-                 <h2 class="text-3xl font-bold mb-4">Routes & Interactive Map</h2>
-                 <p class="mb-4">Select a route below to see the suggested itinerary and view the stores on the interactive map. The map shows all stores, with the selected route's stores highlighted in red.</p>
-                 <div id="main-map" class="mb-6"></div>
-                 <div id="routes-container" class="space-y-4"></div>
-             </div>
+        <div>
+          <label class="mr-2 font-semibold">Second-Hand Cards:</label>
+          <select id="second-hand-filter" class="border border-blue-800 rounded p-2 bg-yellow-100">
+            <option value="">All</option>
+            <option value="Yes">Yes</option>
+            <option value="Likely">Likely</option>
+          </select>
         </div>
-
-        <div id="planner" class="view-content hidden">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-3xl font-bold mb-2">✨ AI Route Planner</h2>
-                <p class="text-gray-600 mb-4">Select the stores you want to visit, add any special requests, and let Gemini create a custom one-day itinerary for you!</p>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="font-semibold text-lg mb-2">1. Select Stores</h3>
-                        <div id="planner-store-selection" class="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-md"></div>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-lg mb-2">2. Add Special Requests</h3>
-                        <textarea id="planner-requests" class="w-full border-gray-300 rounded-md shadow-sm p-2" rows="4" placeholder="e.g., Start after 1 PM, include a 30-minute break for coffee, I want to end near the Eiffel Tower..."></textarea>
-                    </div>
-                </div>
-
-                <div class="text-center mt-6">
-                    <button id="generate-route-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Generate Custom Route</button>
-                </div>
-
-                <div id="planner-result-container" class="mt-6 hidden">
-                    <h3 class="font-semibold text-xl mb-2">Your Custom Itinerary</h3>
-                    <div id="planner-result" class="bg-gray-50 border p-4 rounded-md whitespace-pre-wrap"></div>
-                </div>
-            </div>
+        <div>
+          <label class="mr-2 font-semibold">Arrondissement:</label>
+          <select id="arrondissement-filter" class="border border-blue-800 rounded p-2 bg-yellow-100">
+            <option value="">All</option>
+            <option value="4th">4th</option>
+            <option value="5th">5th</option>
+            <option value="6th">6th</option>
+            <option value="11th">11th</option>
+            <option value="19th">19th</option>
+          </select>
         </div>
+      </div>
+      <!-- Store Table -->
+      <table id="store-table" class="display w-full">
+        <thead class="table-header">
+          <tr>
+            <th>Caught!</th>
+            <th>Store Name</th>
+            <th>Address</th>
+            <th>Inventory Size</th>
+            <th>Vintage Cards</th>
+            <th>Second-Hand Cards</th>
+            <th>Opening Hours</th>
+            <th>Rating</th>
+            <th>Social Media</th>
+            <th>Your Rating</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <!-- Map -->
+      <div class="mt-6">
+        <h3 class="text-2xl font-bold text-red-600 mb-2">Store Map</h3>
+        <div id="store-map" class="map-container"></div>
+      </div>
+    </section>
 
-        <div id="events" class="view-content hidden">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-3xl font-bold mb-4">Community Events</h2>
-                <div class="p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
-                    <h3 class="font-bold text-lg text-yellow-800">Event Status for June 22-25, 2025</h3>
-                    <p class="mt-2">There are no major confirmed Pokémon TCG tournaments or official events for these specific dates as of our last check. However, local stores often host weekly leagues or casual play days.</p>
-                    <p class="mt-2 font-semibold">It is highly recommended to check the stores' official websites or social media closer to your travel date for the most up-to-date schedules.</p>
-                    <div id="event-links" class="mt-4 space-y-2"></div>
-                </div>
-            </div>
-        </div>
+    <!-- Routes Section -->
+    <section id="routes" class="poke-card">
+      <h2 class="text-3xl font-bold text-blue-800 mb-6">Adventure Routes</h2>
+      <div id="route-list"></div>
+    </section>
 
-        <div id="toolkit" class="view-content hidden">
-             <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-3xl font-bold mb-2">Trainer's Toolkit</h2>
-                <p class="text-gray-600 mb-6">Everything you need for a successful expedition. From navigating the metro to key French phrases, these tools will help you navigate the Parisian TCG scene like a pro.</p>
-                <div class="space-y-4">
-                    <details class="bg-gray-50 p-4 rounded-lg border">
-                        <summary class="font-semibold text-lg">Essential French for the Card Hunter</summary>
-                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
-                            <li><strong>Vintage cards:</strong> <em>Avez-vous des cartes Pokémon anciennes / vintage ?</em> (Do you have old/vintage Pokémon cards?)</li>
-                            <li><strong>Single cards:</strong> <em>Vendez-vous des cartes à l'unité ?</em> (Do you sell single cards?)</li>
-                            <li><strong>Language:</strong> <em>En anglais / en japonais ?</em> (In English / in Japanese?)</li>
-                            <li><strong>Card buyback:</strong> <em>Est-ce que vous rachetez des cartes ?</em> (Do you buy cards?)</li>
-                            <li><strong>Specific search:</strong> <em>Je cherche cette carte spécifique.</em> (I am looking for this specific card.)</li>
-                        </ul>
-                    </details>
-                    <details class="bg-gray-50 p-4 rounded-lg border">
-                        <summary class="font-semibold text-lg">Navigation: Métro and RER</summary>
-                        <p class="mt-4 text-gray-700">The Paris public transport system (RATP) is the most efficient way to get around. The <strong>Métro</strong> serves the city center, while the <strong>RER</strong> connects to the suburbs. For a short trip, buying single tickets or a pack of 10 ('carnet') is often the most cost-effective. Apps like Google Maps or Citymapper provide excellent real-time directions.</p>
-                    </details>
-                    <details class="bg-gray-50 p-4 rounded-lg border">
-                        <summary class="font-semibold text-lg">Payments, VAT, and Customs</summary>
-                        <p class="mt-4 text-gray-700">International credit cards (Visa, Mastercard) are widely accepted. Have some Euros in cash for small purchases. As a non-EU resident, for purchases over €100.01 in a single store on the same day, you can ask for a <strong>VAT refund form ('détaxe')</strong> to get a tax refund at the airport. Keep your receipts for U.S. customs on your return.</p>
-                    </details>
-                     <details class="bg-gray-50 p-4 rounded-lg border">
-                        <summary class="font-semibold text-lg">Collector's Etiquette</summary>
-                        <p class="mt-4 text-gray-700">When handling valuable or vintage cards from a store's binder or display case, always ask for permission from the staff first. Handle cards gently by the edges and avoid touching the surface. This shows respect for the items and the store owner.</p>
-                    </details>
-                </div>
-            </div>
-        </div>
-    </main>
+    <!-- Events Section -->
+    <section id="events" class="poke-card">
+      <h2 class="text-3xl font-bold text-blue-800 mb-6">Pokémon TCG Events</h2>
+      <p class="mb-4">No confirmed events for June 22–25, 2025. Check these stores for tournaments or trading sessions closer to your visit:</p>
+      <ul class="list-disc pl-6 text-blue-600">
+        <li><a href="https://www.parkage.com/" target="_blank" class="hover:underline">Parkage</a> (<a href="https://www.instagram.com/parkage_france/" target="_blank" class="hover:underline">Instagram</a>)</li>
+        <li><a href="https://www.ultrajeux.com/" target="_blank" class="hover:underline">UltraJeux</a> (<a href="https://www.instagram.com/ultrajeux/" target="_blank" class="hover:underline">Instagram</a>)</li>
+      </ul>
+    </section>
 
-    <div id="vibe-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div class="p-6 md:p-8">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 id="vibe-modal-title" class="text-2xl font-bold text-gray-900"></h3>
-                    <button id="close-vibe-modal-btn" class="text-gray-400 hover:text-gray-800 transition-colors duration-200 text-3xl font-light">&times;</button>
-                </div>
-                <div id="vibe-modal-content" class="text-gray-700"></div>
-            </div>
+    <!-- Trainer's Toolkit Section -->
+    <section id="toolkit" class="poke-card">
+      <h2 class="text-3xl font-bold text-blue-800 mb-6">Trainer's Toolkit</h2>
+      <p class="mb-4">Everything you need for a successful Pokémon TCG expedition in Paris. From navigating the Métro to key French phrases, these tools will help you conquer the Parisian TCG scene like a pro!</p>
+      
+      <!-- Essential French -->
+      <div class="mb-4">
+        <div class="accordion-header">Essential French for the Card Hunter</div>
+        <div class="accordion-content">
+          <ul class="list-disc pl-6">
+            <li><b>Vintage cards:</b> Avez-vous des cartes Pokémon anciennes / vintage ? (Do you have old/vintage Pokémon cards?)</li>
+            <li><b>Single cards:</b> Vendez-vous des cartes à l'unité ? (Do you sell single cards?)</li>
+            <li><b>Language:</b> En anglais / en japonais ? (In English / in Japanese?)</li>
+            <li><b>Card buyback:</b> Est-ce que vous rachetez des cartes ? (Do you buy cards?)</li>
+            <li><b>Specific search:</b> Je cherche cette carte spécifique. (I am looking for this specific card.)</li>
+          </ul>
         </div>
-    </div>
-    
+      </div>
+
+      <!-- Métro and RER -->
+      <div class="mb-4">
+        <div class="accordion-header">Navigation: Métro and RER</div>
+        <div class="accordion-content">
+          <p>The Paris public transport system (RATP) is the most efficient way to get around. The Métro serves the city center, while the RER connects to suburbs. For a short trip, buy single tickets (€2.10 each) or a pack of 10 ('carnet', ~€16.90). Apps like <a href="https://www.google.com/maps" target="_blank" class="text-blue-600 hover:underline">Google Maps</a> or <a href="https://www.citymapper.com" target="_blank" class="text-blue-600 hover:underline">Citymapper</a> provide real-time directions.</p>
+          <p><b>Tip:</b> Download the RATP app or buy a Navigo Easy card for contactless ticket storage.</p>
+        </div>
+      </div>
+
+      <!-- Payments, VAT, and Customs -->
+      <div class="mb-4">
+        <div class="accordion-header">Payments, VAT, and Customs</div>
+        <div class="accordion-content">
+          <p>International credit cards (Visa, Mastercard) are widely accepted. Carry some Euros (€5–€20) for small purchases. As a non-EU resident, for purchases over €100.01 in a single store on the same day, request a VAT refund form ('détaxe') for a tax refund at the airport. Keep receipts for U.S. customs on your return (declare goods over $800).</p>
+          <p><b>Currency Converter:</b> Check Euro to USD rates below.</p>
+          <div class="mt-2">
+            <input id="euro-input" type="number" placeholder="Enter amount in EUR" class="border border-blue-800 rounded p-2 bg-yellow-100 mr-2">
+            <button id="convert-btn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Convert to USD</button>
+            <p id="convert-result" class="mt-2"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Packing Checklist -->
+      <div class="mb-4">
+        <div class="accordion-header">TCG Packing Checklist</div>
+        <div class="accordion-content">
+          <p>Download this checklist to ensure you're ready for your Pokémon TCG adventure!</p>
+          <ul class="list-disc pl-6">
+            <li>Pokémon card sleeves/protectors</li>
+            <li>Card binder or storage box</li>
+            <li>Trade list (cards you want to trade/sell)</li>
+            <li>Notebook for tracking finds</li>
+            <li>Euros in cash (€20–€50)</li>
+            <li>International credit card</li>
+            <li>Portable phone charger</li>
+            <li>Citymapper or Google Maps app</li>
+          </ul>
+          <a href="data:text/plain;charset=utf-8,Pokémon%20TCG%20Paris%20Packing%20Checklist%0A- Pokémon card sleeves/protectors%0A- Card binder or storage box%0A- Trade list (cards to trade/sell)%0A- Notebook for tracking finds%0A- Euros in cash (€20–€50)%0A- International credit card%0A- Portable phone charger%0A- Citymapper or Google Maps app" download="pokemon-tcg-paris-checklist.txt" class="text-blue-600 hover:underline">Download Checklist</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chart Section -->
+    <section id="charts" class="poke-card">
+      <h2 class="text-3xl font-bold text-blue-800 mb-6">Store Distribution</h2>
+      <canvas id="arrondissement-chart" class="max-w-md mx-auto"></canvas>
+    </section>
+
     <script>
-    // This script will execute only after the entire HTML document is loaded and ready.
-    $(document).ready(function() {
-
-        const appData = {
-            "stores": [
-                { "id": "S01", "name": "Curious Pop", "address": "57 rue du Temple, 75004 Paris", "arrondissement": "4th", "coordinates": {"lat": 48.8606, "long": 2.3545}, "inventory_size": "Large", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.5/5", "website": "https://curiouspop.com/", "social_media": {"instagram": "https://www.instagram.com/curiouspop/", "facebook": "https://www.facebook.com/curiouspop"}},
-                { "id": "S02", "name": "Fuji Store", "address": "6 rue Rampon, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8665, "long": 2.3683}, "inventory_size": "Large", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.8/5", "website": "https://fuji-store.fr/", "social_media": {"instagram": "https://www.instagram.com/fujistore/"}},
-                { "id": "S03", "name": "Parkage GSH", "address": "25 rue Geoffroy-Saint-Hilaire, 75005 Paris", "arrondissement": "5th", "coordinates": {"lat": 48.8436, "long": 2.3553}, "inventory_size": "Large", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.6/5", "website": "https://www.parkage.com/", "social_media": {"instagram": "https://www.instagram.com/parkage_france/"}},
-                { "id": "S04", "name": "UltraJeux Bastille", "address": "13 Rue Amelot, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8558, "long": 2.3684}, "inventory_size": "Medium", "vintage_cards": "Unknown", "second_hand_cards": "Unknown", "open_sunday": true, "rating": "4.4/5", "website": "https://www.ultrajeux.com/", "social_media": {"instagram": "https://www.instagram.com/ultrajeux/"}},
-                { "id": "S05", "name": "Le Repaire du Dragon", "address": "28 rue des Fossés Saint-Bernard, 75005 Paris", "arrondissement": "5th", "coordinates": {"lat": 48.8475, "long": 2.3533}, "inventory_size": "Medium", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.7/5", "website": "https://www.lerepairedudragon.fr/", "social_media": {"facebook": "https://www.facebook.com/lerepairedudragon"}},
-                { "id": "S06", "name": "Le Coin des Barons", "address": "66 Rue de la Verrerie, 75004 Paris", "arrondissement": "4th", "coordinates": {"lat": 48.8582, "long": 2.3524}, "inventory_size": "Small", "vintage_cards": "Yes", "second_hand_cards": "Yes", "open_sunday": true, "rating": "4.3/5", "website": "https://www.sortiraparis.com/shopping-and-fashion/shopping/articles/173981-le-coin-des-barons-the-boutique-for-tcg-and-board-game-enthusiasts-in-paris", "social_media": {"instagram": "https://www.instagram.com/lecoindesbarons/"}},
-                { "id": "S07", "name": "Parkage EDB", "address": "48 rue de l'École de Droit, 75006 Paris", "arrondissement": "6th", "coordinates": {"lat": 48.8517, "long": 2.3414}, "inventory_size": "Medium", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.5/5", "website": "https://www.parkage.com/", "social_media": {"instagram": "https://www.instagram.com/parkage_france/"}},
-                { "id": "S08", "name": "UltraJeux Oberkampf", "address": "103 rue de la Folie Méricourt, 75011 Paris", "arrondissement": "11th", "coordinates": {"lat": 48.8672, "long": 2.3725}, "inventory_size": "Medium", "vintage_cards": "Unknown", "second_hand_cards": "Unknown", "open_sunday": false, "rating": "4.6/5", "website": "https://www.ultrajeux.com/", "social_media": {"instagram": "https://www.instagram.com/ultrajeux/"}},
-                { "id": "S09", "name": "Magic Bazar", "address": "13 rue de la Glacière, 75013 Paris", "arrondissement": "13th", "coordinates": {"lat": 48.8340, "long": 2.3480}, "inventory_size": "Large", "vintage_cards": "Likely", "second_hand_cards": "Yes", "open_sunday": false, "rating": "4.7/5", "website": "https://www.magicbazar.fr/", "social_media": {}}
-            ],
-            "routes": [
-                { "name": "Route 1: The Sunday Collector's Run", "estimated_time": "4-5 hours", "stores": ["S02", "S04", "S06", "S01"], "sightseeing": ["Place de la Bastille", "Le Marais District", "Centre Pompidou"] },
-                { "name": "Route 2: The Latin Quarter Deep Dive", "estimated_time": "3-4 hours", "stores": ["S05", "S03", "S07"], "sightseeing": ["Jardin des Plantes", "Sorbonne University", "Luxembourg Gardens"] },
-                { "name": "Route 3: The 11th Arrondissement Sweep", "estimated_time": "2-3 hours", "stores": ["S02", "S08", "S04"], "sightseeing": ["Place de la République", "Canal Saint-Martin"] }
-            ]
-        };
-
-        let visitedStores = JSON.parse(localStorage.getItem('visitedStores')) || [];
-        let storeRatings = JSON.parse(localStorage.getItem('storeRatings')) || {};
-        let map, storeMarkers = {}, routeLayerGroup = L.layerGroup();
-        
-        function updateProgress() {
-            const progress = (visitedStores.length / appData.stores.length) * 100;
-            $('#progress-bar').css('width', `${progress}%`);
-            $('#progress-text').text(`${visitedStores.length}/${appData.stores.length}`);
+      // Store Data
+      const stores = [
+        {
+          name: "Curious Pop",
+          address: "57 rue du Temple, 75004 Paris",
+          coordinates: { lat: 48.8606, long: 2.3545 },
+          inventory_size: "Large",
+          vintage_cards: "Yes",
+          second_hand_cards: "Yes",
+          opening_hours: { Sun: "15:15-19:00", "Mon-Thu": "11:30-19:00", Fri: "11:30-18:00", Sat: "11:30-19:00" },
+          rating: "4.5/5 (118, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://curiouspop.com/",
+          social_media: { instagram: "https://www.instagram.com/curiouspop/", facebook: "https://www.facebook.com/curiouspop" },
+          arrondissement: "4th"
+        },
+        {
+          name: "Fuji Store",
+          address: "6 rue Rampon, 75011 Paris",
+          coordinates: { lat: 48.8653, long: 2.3697 },
+          inventory_size: "Medium to Large",
+          vintage_cards: "Likely",
+          second_hand_cards: "Likely",
+          opening_hours: { Daily: "10:00-20:00" },
+          rating: "4.9/5 (1229, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://fuji-store.fr/",
+          social_media: { instagram: "https://www.instagram.com/fujistore/" },
+          arrondissement: "11th"
+        },
+        {
+          name: "Le Repaire du Dragon",
+          address: "43 Bis av Simon Bolivar, 75019 Paris",
+          coordinates: { lat: 48.8748, long: 2.3921 },
+          inventory_size: "Large",
+          vintage_cards: "Yes",
+          second_hand_cards: "Likely",
+          opening_hours: { "Mon-Sat": "11:00-19:30", Sun: "Closed" },
+          rating: "4.5/5 (742, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.lerepairedudragon.fr/",
+          social_media: { facebook: "https://www.facebook.com/lerepairedudragon" },
+          arrondissement: "19th"
+        },
+        {
+          name: "UltraJeux Bastille",
+          address: "13 Rue Amelot, 75011 Paris",
+          coordinates: { lat: 48.8586, long: 2.3667 },
+          inventory_size: "Large",
+          vintage_cards: "Unknown",
+          second_hand_cards: "Unknown",
+          opening_hours: { Sun: "10:30-18:30", "Mon-Tue": "13:00-19:00", "Wed-Fri": "13:00-22:00", Sat: "10:30-22:00" },
+          rating: "4.0/5 (854, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.ultrajeux.com/",
+          social_media: { instagram: "https://www.instagram.com/ultrajeux/" },
+          arrondissement: "11th"
+        },
+        {
+          name: "UltraJeux Oberkampf",
+          address: "108 Bd Richard Lenoir, 75011 Paris",
+          coordinates: { lat: 48.8674, long: 2.3705 },
+          inventory_size: "Large",
+          vintage_cards: "Unknown",
+          second_hand_cards: "Unknown",
+          opening_hours: { "Mon-Fri": "13:00-19:30", Sat: "10:30-19:30", Sun: "Closed" },
+          rating: "4.7/5 (222, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.ultrajeux.com/",
+          social_media: { instagram: "https://www.instagram.com/ultrajeux/" },
+          arrondissement: "11th"
+        },
+        {
+          name: "UltraJeux Rennes-Raspail",
+          address: "110 Rue de Rennes, 75006 Paris",
+          coordinates: { lat: 48.8489, long: 2.3280 },
+          inventory_size: "Large",
+          vintage_cards: "Unknown",
+          second_hand_cards: "Unknown",
+          opening_hours: { Daily: "11:00-19:00" },
+          rating: "4.2/5 (43, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.ultrajeux.com/",
+          social_media: { instagram: "https://www.instagram.com/ultrajeux/" },
+          arrondissement: "6th"
+        },
+        {
+          name: "Parkage GSH",
+          address: "25 rue Geoffroy-Saint-Hilaire, 75005 Paris",
+          coordinates: { lat: 48.8418, long: 2.3562 },
+          inventory_size: "Large",
+          vintage_cards: "Yes",
+          second_hand_cards: "Yes",
+          opening_hours: { "Tue-Sat": "12:00-20:00", "Sun-Mon": "Closed" },
+          rating: "4.0/5 (445, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.parkage.com/",
+          social_media: { instagram: "https://www.instagram.com/parkage_france/" },
+          arrondissement: "5th"
+        },
+        {
+          name: "Parkage EDB",
+          address: "11 rue de l'épée de bois, 75005 Paris",
+          coordinates: { lat: 48.8414, long: 2.3510 },
+          inventory_size: "Large",
+          vintage_cards: "Yes",
+          second_hand_cards: "Yes",
+          opening_hours: { "Tue-Wed": "13:00-21:00", "Thu-Fri": "13:00-22:00", Sat: "11:00-22:00", "Sun-Mon": "Closed" },
+          rating: "4.8/5 (18, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.parkage.com/",
+          social_media: { instagram: "https://www.instagram.com/parkage_france/" },
+          arrondissement: "5th"
+        },
+        {
+          name: "Le Coin des Barons",
+          address: "48 bis rue de Rivoli, 75004 Paris",
+          coordinates: { lat: 48.8566, long: 2.3533 },
+          inventory_size: "Large",
+          vintage_cards: "Likely",
+          second_hand_cards: "Likely",
+          opening_hours: { Daily: "10:00-20:00" },
+          rating: "4.8/5 (553, Google Maps)",
+          credit_cards: "Likely",
+          english_staff: "Likely",
+          website: "https://www.sortiraparis.com",
+          social_media: { instagram: "https://www.instagram.com/lecoindesbarons/" },
+          arrondissement: "4th"
         }
+      ];
 
-        function toggleVisited(storeId) {
-            const index = visitedStores.indexOf(storeId);
-            if (index > -1) visitedStores.splice(index, 1);
-            else visitedStores.push(storeId);
-            localStorage.setItem('visitedStores', JSON.stringify(visitedStores));
-            updateProgress();
-            $('#stores-table').DataTable().rows().invalidate('data').draw(false);
+      const routes = [
+        {
+          name: "Sunday Exploration",
+          date: "2025-06-22",
+          stores: [
+            { name: "Fuji Store", time: "10:00 AM" },
+            { name: "UltraJeux Bastille", time: "10:30 AM" },
+            { name: "Curious Pop", time: "3:15 PM" },
+            { name: "Le Coin des Barons", time: "Post-3:15 PM" }
+          ],
+          sightseeing: [
+            { name: "Place de la Bastille", proximity: "5-minute walk from UltraJeux Bastille" },
+            { name: "Le Marais", proximity: "5-10-minute walk from Curious Pop/Le Coin des Barons" },
+            { name: "Hôtel de Ville", proximity: "5-minute walk from Le Coin des Barons" }
+          ],
+          estimated_time: "4-5 hours"
+        },
+        {
+          name: "Monday North and Center",
+          date: "2025-06-23",
+          stores: [
+            { name: "Le Repaire du Dragon", time: "11:00 AM" },
+            { name: "UltraJeux Oberkampf", time: "1:00 PM" }
+          ],
+          sightseeing: [
+            { name: "Parc des Buttes-Chaumont", proximity: "10-minute walk from Le Repaire du Dragon" },
+            { name: "Canal Saint-Martin", proximity: "10-15-minute walk from UltraJeux Oberkampf" }
+          ],
+          estimated_time: "3-4 hours"
+        },
+        {
+          name: "Tuesday TCG Immersion",
+          date: "2025-06-24",
+          stores: [
+            { name: "Parkage GSH", time: "12:00 PM" },
+            { name: "Parkage EDB", time: "1:00 PM" }
+          ],
+          sightseeing: [
+            { name: "Jardin des Plantes", proximity: "5-minute walk from Parkage GSH" },
+            { name: "Panthéon", proximity: "10-minute walk from Parkage EDB" }
+          ],
+          estimated_time: "2-3 hours"
+        },
+        {
+          name: "Wednesday Wrap-up",
+          date: "2025-06-25",
+          stores: [
+            { name: "UltraJeux Rennes-Raspail", time: "11:00 AM" },
+            { name: "Optional Revisit", time: "Post-1:00 PM" }
+          ],
+          sightseeing: [
+            { name: "Saint-Germain-des-Prés", proximity: "5-minute walk from UltraJeux Rennes-Raspail" },
+            { name: "Luxembourg Gardens", proximity: "10-minute walk from UltraJeux Rennes-Raspail" }
+          ],
+          estimated_time: "2-4 hours"
+        },
+        {
+          name: "Central Paris Full-Day Tour",
+          date: "Flexible",
+          stores: [
+            { name: "UltraJeux Rennes-Raspail", time: "11:00 AM" },
+            { name: "Parkage GSH", time: "12:00 PM" },
+            { name: "Parkage EDB", time: "1:00 PM" },
+            { name: "Curious Pop", time: "Post-1:00 PM" },
+            { name: "Le Coin des Barons", time: "Post-1:00 PM" }
+          ],
+          sightseeing: [
+            { name: "Luxembourg Gardens", proximity: "10-minute walk from UltraJeux Rennes-Raspail" },
+            { name: "Panthéon", proximity: "10-minute walk from Parkage stores" },
+            { name: "Centre Pompidou", proximity: "10-minute walk from Curious Pop/Le Coin des Barons" }
+          ],
+          estimated_time: "6-8 hours"
         }
+      ];
 
-        function saveRating(storeId, rating) {
-            storeRatings[storeId] = rating;
-            localStorage.setItem('storeRatings', JSON.stringify(storeRatings));
-            $('#stores-table').DataTable().rows().invalidate('data').draw(false);
+      // Initialize Checklist, Ratings, and Badges
+      let visitedStores = JSON.parse(localStorage.getItem('visitedStores')) || {};
+      let storeRatings = JSON.parse(localStorage.getItem('storeRatings')) || {};
+
+      function updateProgress() {
+        const visitedCount = Object.values(visitedStores).filter(v => v).length;
+        const progressPercent = (visitedCount / stores.length) * 100;
+        document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+        document.getElementById('progress-text').textContent = `Adventure Progress: ${visitedCount}/${stores.length} Stores Visited`;
+
+        // Update Badges
+        const badgeContainer = document.getElementById('badge-container');
+        badgeContainer.innerHTML = '';
+        if (visitedCount >= 3) {
+          badgeContainer.innerHTML += '<span class="badge">Bronze Trainer (3+ Stores)</span>';
         }
-        
-        $('.nav-tab').on('click', function() {
-            const target = $(this).data('target');
-            $('.view-content').addClass('hidden');
-            $('#' + target).removeClass('hidden');
-            $('.nav-tab').removeClass('nav-active');
-            $(this).addClass('nav-active');
-            if (target === 'routes' && map) setTimeout(() => map.invalidateSize(), 10);
+        if (visitedCount >= 6) {
+          badgeContainer.innerHTML += '<span class="badge">Silver Trainer (6+ Stores)</span>';
+        }
+        if (visitedCount >= 9) {
+          badgeContainer.innerHTML += '<span class="badge">Pokémon Master (All Stores)</span>';
+        }
+      }
+
+      // Initialize Store Table
+      $(document).ready(function() {
+        const table = $('#store-table').DataTable({
+          data: stores,
+          columns: [
+            {
+              data: null,
+              render: function(data, type, row) {
+                return `<input type="checkbox" class="visited-checkbox" data-store="${row.name}" ${visitedStores[row.name] ? 'checked' : ''}>`;
+              }
+            },
+            {
+              data: 'name',
+              render: function(data, type, row) {
+                return `<a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-bold">${data}</a>`;
+              }
+            },
+            { data: 'address' },
+            { data: 'inventory_size' },
+            { data: 'vintage_cards' },
+            { data: 'second_hand_cards' },
+            {
+              data: 'opening_hours',
+              render: function(data) {
+                return Object.entries(data).map(([day, hours]) => `${day}: ${hours}`).join('<br>');
+              }
+            },
+            { data: 'rating' },
+            {
+              data: 'social_media',
+              render: function(data) {
+                let links = '';
+                if (data.instagram) links += `<a href="${data.instagram}" target="_blank" class="text-blue-600 hover:underline">Instagram</a> `;
+                if (data.facebook) links += `<a href="${data.facebook}" target="_blank" class="text-blue-600 hover:underline">Facebook</a>`;
+                return links || 'N/A';
+              }
+            },
+            {
+              data: null,
+              render: function(data, type, row) {
+                const rating = storeRatings[row.name] || 0;
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                  stars += `<span class="star-rating" data-store="${row.name}" data-rating="${i}">${i <= rating ? '★' : '☆'}</span>`;
+                }
+                return stars;
+              }
+            }
+          ],
+          pageLength: 5,
+          responsive: true
         });
 
-        function initStoresTable() {
-            const table = $('#stores-table').DataTable({
-                data: appData.stores,
-                responsive: true,
-                columns: [
-                    { title: "✓", data: "id", orderable: false, render: data => `<input type="checkbox" class="visit-cb form-checkbox rounded text-blue-500" data-id="${data}" ${visitedStores.includes(data) ? 'checked' : ''}>` },
-                    { title: "Store", data: "name", render: (data, type, row) => `<a href="${row.website}" target="_blank" class="text-blue-600 hover:underline font-semibold">${data}</a>` },
-                    { title: "Inventory", data: "inventory_size" },
-                    { title: "Vintage", data: "vintage_cards" },
-                    { title: "Rating", data: "rating" },
-                    { title: "My Rating", data: "id", orderable: false, render: data => {
-                        let stars = '';
-                        const currentRating = storeRatings[data] || 0;
-                        for (let i = 1; i <= 5; i++) stars += `<span class="star ${i <= currentRating ? 'rated' : ''}" data-id="${data}" data-value="${i}">&#9733;</span>`;
-                        return `<div class="rating-stars">${stars}</div>`;
-                    }},
-                    { title: "Actions", data: "id", orderable: false, render: data => `<button class="get-vibe-btn bg-purple-500 text-white px-2 py-1 text-xs rounded hover:bg-purple-600" data-id="${data}">✨ Get Vibe</button>` }
-                ]
-            });
+        // Filter Logic
+        $('#day-filter, #vintage-filter, #second-hand-filter, #arrondissement-filter').on('change', function() {
+          let dayFilter = $('#day-filter').val();
+          let vintageFilter = $('#vintage-filter').val();
+          let secondHandFilter = $('#second-hand-filter').val();
+          let arrondissementFilter = $('#arrondissement-filter').val();
 
-            $('#stores-table tbody').on('change', '.visit-cb', function() { toggleVisited($(this).data('id')); });
-            $('#stores-table tbody').on('click', '.star', function(e) { e.stopPropagation(); saveRating($(this).data('id'), $(this).data('value')); });
-            $('#stores-table tbody').on('click', '.get-vibe-btn', function(e) { e.stopPropagation(); getStoreVibe($(this).data('id')); });
-            
-            $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
-                const store = appData.stores[dataIndex];
-                if ($('#filter-sunday').is(':checked') && !store.open_sunday) return false;
-                if ($('#filter-vintage').is(':checked') && !['Yes', 'Likely'].includes(store.vintage_cards)) return false;
-                if ($('#filter-secondhand').is(':checked') && !['Yes', 'Likely'].includes(store.second_hand_cards)) return false;
-                return true;
-            });
-
-            $('.filter-cb').on('change', () => table.draw());
-        }
-
-        function initMap() {
-            map = L.map('main-map').setView([48.8566, 2.3522], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-            const defaultIcon = L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-            const highlightedIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-            appData.stores.forEach(store => {
-                const marker = L.marker([store.coordinates.lat, store.coordinates.long], { icon: defaultIcon }).addTo(map);
-                let social = store.social_media.instagram ? `<a href="${store.social_media.instagram}" target="_blank" class="text-blue-500">Instagram</a>` : '';
-                if(store.social_media.facebook) social += (social ? ' | ' : '') + `<a href="${store.social_media.facebook}" target="_blank" class="text-blue-500">Facebook</a>`;
-                marker.bindPopup(`<b>${store.name}</b><br>${store.address}<br><a href="${store.website}" target="_blank" class="text-blue-500">Website</a> | <a href="https://maps.google.com/?q=${store.coordinates.lat},${store.coordinates.long}" target="_blank" class="text-blue-500">Directions</a><br>${social || ''}`);
-                storeMarkers[store.id] = { marker, defaultIcon, highlightedIcon };
-            });
-            routeLayerGroup.addTo(map);
-        }
-        
-        function displayRouteOnMap(routeId) {
-            routeLayerGroup.clearLayers();
-            Object.values(storeMarkers).forEach(m => m.marker.setIcon(m.defaultIcon));
-            const route = appData.routes[routeId];
-            if (!route) return;
-            const latLngs = route.stores.map(id => {
-                const storeMarkerInfo = storeMarkers[id];
-                if (storeMarkerInfo) storeMarkerInfo.marker.setIcon(storeMarkerInfo.highlightedIcon);
-                return storeMarkerInfo.marker.getLatLng();
-            });
-            if(latLngs.length > 0) {
-                 const polyline = L.polyline(latLngs, {color: '#ef4444', weight: 5}).addTo(routeLayerGroup);
-                 map.fitBounds(polyline.getBounds().pad(0.2));
+          table.clear();
+          let filteredData = stores.filter(store => {
+            let dayMatch = true;
+            if (dayFilter) {
+              dayMatch = store.opening_hours[dayFilter] && store.opening_hours[dayFilter] !== 'Closed';
             }
-        }
-        
-        function renderRoutes() {
-            const container = $('#routes-container');
-            container.html('');
-            appData.routes.forEach((route, index) => {
-                const storeList = route.stores.map(id => `<li><span class="font-bold">${appData.stores.find(s=>s.id===id).name}</span></li>`).join('');
-                const sightsList = route.sightseeing.map(s => `<li>${s}</li>`).join('');
-                const routeHtml = `
-                    <div class="border rounded-lg p-4">
-                        <details>
-                            <summary class="font-bold text-xl">${route.name} <span class="text-sm font-normal text-gray-500">(${route.estimated_time})</span></summary>
-                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><h4 class="font-semibold mb-2">Store Visits:</h4><ul class="list-disc list-inside space-y-1">${storeList}</ul></div>
-                                <div><h4 class="font-semibold mb-2">Nearby Sights:</h4><ul class="list-disc list-inside space-y-1">${sightsList}</ul></div>
-                            </div>
-                            <button class="show-route-btn mt-4 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm" data-route-id="${index}">Show on Map</button>                        </details>
-                    </div>`;
-                container.append(routeHtml);
-            });
-            $('.show-route-btn').on('click', function() { displayRouteOnMap($(this).data('route-id')); });
-        }
-        
-        function renderChart() {
-            const ctx = $('#distribution-chart')[0].getContext('2d');
-            const counts = appData.stores.reduce((acc, s) => { acc[s.arrondissement] = (acc[s.arrondissement] || 0) + 1; return acc; }, {});
-            new Chart(ctx, {
-                type: 'bar',
-                data: { labels: Object.keys(counts), datasets: [{ label: '# of Stores', data: Object.values(counts), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] },
-                options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
-            });
-        }
-        
-        function renderEventLinks() {
-            const container = $('#event-links');
-            container.html('');
-            ["Parkage GSH", "UltraJeux Bastille", "Fuji Store"].forEach(name => {
-                const store = appData.stores.find(s => s.name === name);
-                if (store) container.append(`<div><a href="${store.website}" target="_blank" class="text-blue-600 hover:underline">Check ${store.name} for events</a></div>`);
-            });
-        }
+            let vintageMatch = !vintageFilter || store.vintage_cards === vintageFilter;
+            let secondHandMatch = !secondHandFilter || store.second_hand_cards === secondHandFilter;
+            let arrondissementMatch = !arrondissementFilter || store.arrondissement === arrondissementFilter;
+            return dayMatch && vintageMatch && secondHandMatch && arrondissementMatch;
+          });
+          table.rows.add(filteredData).draw();
+        });
 
-        function renderPlannerStoreSelection() {
-            const container = $('#planner-store-selection');
-            container.html('');
-            appData.stores.forEach(store => {
-                container.append(`<label class="flex items-center space-x-2"><input type="checkbox" class="planner-store-cb form-checkbox rounded text-blue-500" value="${store.id}"><span>${store.name}</span></label>`);
-            });
-        }
-        
-        async function callGemini(prompt) {
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                const result = await response.json();
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
-                    return result.candidates[0].content.parts[0].text;
-                }
-                return "Sorry, I couldn't generate a response. The model's response was empty.";
-            } catch (error) {
-                console.error("Gemini API call failed:", error);
-                return `Sorry, there was an error contacting the AI. Please check your internet connection and the console for details.`;
-            }
-        }
+        // Checklist Logic
+        $('#store-table').on('change', '.visited-checkbox', function() {
+          const storeName = $(this).data('store');
+          visitedStores[storeName] = this.checked;
+          localStorage.setItem('visitedStores', JSON.stringify(visitedStores));
+          updateProgress();
+        });
 
-        async function generateCustomRoute() {
-            const selectedStoreIds = Array.from($('.planner-store-cb:checked')).map(cb => cb.value);
-            if (selectedStoreIds.length === 0) { alert("Please select at least one store."); return; }
-            const selectedStores = appData.stores.filter(s => selectedStoreIds.includes(s.id));
-            const requests = $('#planner-requests').val();
-            const resultDiv = $('#planner-result');
-            $('#planner-result-container').show();
-            resultDiv.html('<div class="flex justify-center items-center"><div class="loader"></div><p class="ml-4">Generating your custom route...</p></div>');
-            const storeDetails = selectedStores.map(s => `${s.name} at ${s.address} (Arrondissement: ${s.arrondissement})`).join('; ');
-            const prompt = `Act as a helpful Paris tour guide for a Pokémon TCG fan. Create a logical and time-efficient one-day itinerary to visit the following stores: ${storeDetails}. The user has these requests: "${requests || 'None'}". Structure the output with a title, suggested times, and travel methods (walking or Métro line). Be realistic about travel.`;
-            const itinerary = await callGemini(prompt);
-            resultDiv.text(itinerary);
-        }
+        // Rating Logic
+        $('#store-table').on('click', '.star-rating', function() {
+          const storeName = $(this).data('store');
+          const rating = $(this).data('rating');
+          storeRatings[storeName] = rating;
+          localStorage.setItem('storeRatings', JSON.stringify(storeRatings));
+          table.rows().invalidate().draw();
+        });
 
-        async function getStoreVibe(storeId) {
-            const store = appData.stores.find(s => s.id === storeId);
-            if (!store) return;
-            const modal = $('#vibe-modal');
-            $('#vibe-modal-title').text(`✨ Vibe Check: ${store.name}`);
-            $('#vibe-modal-content').html('<div class="flex justify-center items-center"><div class="loader"></div><p class="ml-4">Analyzing store vibes...</p></div>');
-            modal.addClass('is-open');
-            const prompt = `As a Pokémon TCG enthusiast, describe the likely "vibe" and experience at a Paris store with these traits: Name: ${store.name}; Inventory Size: ${store.inventory_size}; Sells Vintage Cards: ${store.vintage_cards}; Rating: ${store.rating}. Write a short, evocative paragraph.`;
-            const vibe = await callGemini(prompt);
-            $('#vibe-modal-content').text(vibe);
+        // Accordion Logic
+        $('.accordion-header').on('click', function() {
+          const content = $(this).next('.accordion-content');
+          content.toggleClass('active');
+          $('.accordion-content').not(content).removeClass('active');
+        });
+
+        // Currency Converter Logic
+        $('#convert-btn').on('click', function() {
+          const euros = parseFloat($('#euro-input').val());
+          if (!isNaN(euros)) {
+            const usd = euros * 1.09; // Approximate EUR to USD rate as of June 2025
+            $('#convert-result').text(`${euros} EUR ≈ ${usd.toFixed(2)} USD`);
+          } else {
+            $('#convert-result').text('Please enter a valid amount.');
+          }
+        });
+      });
+
+      // Initialize Map
+      const map = L.map('store-map').setView([48.8566, 2.3522], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      stores.forEach(store => {
+        L.marker([store.coordinates.lat, store.coordinates.long])
+          .addTo(map)
+          .bindPopup(`
+            <b><a href="${store.website}" target="_blank">${store.name}</a></b><br>
+            ${store.address}<br>
+            Inventory: ${store.inventory_size}<br>
+            Vintage: ${store.vintage_cards}<br>
+            Second-Hand: ${store.second_hand_cards}<br>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.address)}" target="_blank">Get Directions</a><br>
+            Social: ${store.social_media.instagram ? `<a href="${store.social_media.instagram}" target="_blank">Instagram</a>` : ''} 
+            ${store.social_media.facebook ? `<a href="${store.social_media.facebook}" target="_blank">Facebook</a>` : ''}
+          `);
+      });
+
+      // Initialize Routes
+      const routeList = document.getElementById('route-list');
+      routes.forEach(route => {
+        const routeDiv = document.createElement('div');
+        routeDiv.className = 'mb-6';
+        routeDiv.innerHTML = `
+          <h3 class="text-2xl font-bold text-red-600">${route.name} (${route.date})</h3>
+          <p class="font-semibold">Estimated Time: ${route.estimated_time}</p>
+          <p class="font-semibold mt-2">Stores:</p>
+          <ul class="list-disc pl-6">
+            ${route.stores.map(store => {
+              const storeData = stores.find(s => s.name === store.name);
+              return `<li>${store.name} (${store.time})${storeData ? ` - <a href="${storeData.website}" target="_blank" class="text-blue-600 hover:underline">Visit Site</a>` : ''}</li>`;
+            }).join('')}
+          </ul>
+          <p class="font-semibold mt-2">Sightseeing:</p>
+          <ul class="list-disc pl-6">
+            ${route.sightseeing.map(sight => `<li>${sight.name} (${sight.proximity})</li>`).join('')}
+          </ul>
+          <div id="route-map-${route.name.replace(/\s/g, '-')}" class="map-container mt-4"></div>
+        `;
+        routeList.appendChild(routeDiv);
+
+        // Route Map
+        const routeMap = L.map(`route-map-${route.name.replace(/\s/g, '-')}`).setView([48.8566, 2.3522], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap'
+        }).addTo(routeMap);
+        const routeCoords = route.stores
+          .map(s => stores.find(store => store.name === s.name))
+          .filter(s => s)
+          .map(s => [s.coordinates.lat, s.coordinates.long]);
+        L.polyline(routeCoords, { color: '#ff0000' }).addTo(routeMap);
+        routeCoords.forEach(coord => {
+          L.marker(coord).addTo(routeMap);
+        });
+        routeMap.fitBounds(routeCoords);
+      });
+
+      // Initialize Chart
+      const ctx = document.getElementById('arrondissement-chart').getContext('2d');
+      const arrondissementCounts = stores.reduce((acc, store) => {
+        acc[store.arrondissement] = (acc[store.arrondissement] || 0) + 1;
+        return acc;
+      }, {});
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(arrondissementCounts),
+          datasets: [{
+            label: 'Stores by Arrondissement',
+            data: Object.values(arrondissementCounts),
+            backgroundColor: '#ffcb05',
+            borderColor: '#e3350d',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true, precision: 0 } },
+          plugins: { legend: { labels: { color: '#2b2b2b' } } }
         }
-        
-        // Setup Event Handlers
-        $('#generate-route-btn').on('click', generateCustomRoute);
-        $('#close-vibe-modal-btn').on('click', () => $('#vibe-modal').removeClass('is-open'));
-        $('#vibe-modal').on('click', function(e) { if (e.target === this) $(this).removeClass('is-open'); });
-        
-        // Initial Page Renders
-        initStoresTable();
-        initMap();
-        renderRoutes();
-        renderChart();
-        renderEventLinks();
-        renderPlannerStoreSelection();
-        updateProgress();
-    });
+      });
+
+      // Initial Progress Update
+      updateProgress();
     </script>
 </body>
 </html>
